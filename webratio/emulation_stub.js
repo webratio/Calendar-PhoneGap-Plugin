@@ -4,7 +4,7 @@ function createStubs() {
     var $ = window.top.jQuery;
 
     function initOpenCalendar(date) {
-        var calendarTable = "<table border=\"0\" style=\"width:100%;border-collapse: collapse;\">";
+        var calendarTable = "<table border=\"0\" style=\"width:100%;border-collapse: collapse;margin: 44px 0;\">";
         for (var i = 0; i < 24; i++) {
             var hour;
             if (i <= 12) {
@@ -14,7 +14,7 @@ function createStubs() {
             }
             if (i === 10) {
                 calendarTable += "<tr><td width=\"25%\" height=\"40px\">" + hour + "</td>";
-                calendarTable += "<td rowspan=\"3\" height=\"40px\"><div style=\"border: 2px solid #3498db; padding: 10px 40px; background: #3498DB;height:100%; width: 60%; border-radius: 25px; color: #fff; font-size:150%\"><p align=\"center\">Meeting</p></div></td>";
+                calendarTable += "<td rowspan=\"3\" height=\"40px\"><div style=\"background: #666;  border-radius: 10px; color: #fff; font-size:150%;display: table-cell;vertical-align: middle;height: 120px;width: 200px;max-width: 100%;\"><p align=\"center\">Meeting</p></div></td>";
             } else {
                 calendarTable += "<tr><td width=\"25%\" height=\"40px\">" + hour + "</td><td>";
                 if (i < 10 || i > 12) {
@@ -31,7 +31,7 @@ function createStubs() {
         var openCalendarTemplate = [
                 "<section id=\"wr-calendar-emulator\" style=\"display:none; background: rgba(0, 0, 0, 0); position: absolute; width: 100%; height: 100%; z-index: 10000;\">",
                 "<div style=\"background: #fff; height: 100%; width: 100%; overflow: auto;\">",
-                "<div id=\"wr-calendar-title\" style=\"background: #3498db; font-size: 2em; color: #fff; text-align: center; font-weight: bold; line-height: 2em;\">"
+            "<div id=\"wr-calendar-title\" style=\"background: #000;  color: #fff;  font-weight: bold; line-height: 44px;padding: 0 10px;position: absolute;top: 0;left: 0;right: 0;\">"
                         + dateToShow.toDateString() + "</div>", calendarTable, "</div>", "</section>" ].join("\n");
 
         var opCalendar = $(openCalendarTemplate);
@@ -57,31 +57,31 @@ function createStubs() {
         if (data.recurrenceEndTime) {
             recurrenceEndDate = new Date(data.recurrenceEndTime);
         }
-        var headerTable = "<table style=\"width:100%; border-collapse:collapse;\"><tr><td id=\"cancel\" style=\"width:20%;font-size:60%; cursor:pointer;\">Cancel</td><td style=\"width:60%;\">New Event</td><td id=\"done\" style=\"width:20%; font-size:60%; cursor:pointer;\">Save</td><tr></table>";
+        var headerTable = "<table style=\"width:100%; border-collapse:collapse;\"><tr><td id=\"done\" style=\"cursor:pointer;\">SAVE</td><td style=\"width: 99%;color: #E6E6E6;\">New Event</td><td id=\"cancel\" style=\"cursor:pointer;\">CANCEL</td><tr></table>";
         var eventTable = [
-                "<table border=\"0\" style=\"width:100%;border-collapse: collapse;\">",
-                "<tr><td id=\"eventTitle\" style=\"padding-bottom:5%; padding-top:5%; font-size:120%;\" colspan=\"2\">"
+                "<table border=\"0\" style=\"width:100%;border-collapse: collapse; margin: 44px 0;\">",
+            "<tr><td id=\"eventTitle\" style=\"padding: 10px;  border-bottom: 1px solid #ddd;font-size: 1.2em;\" colspan=\"2\">"
                         + (data.title ? data.title : "<i style=\"color:#C0C0C0;\">Insert the title</i>") + "</td></tr>",
-                "<tr><td id=\"allDayLabel\" style=\"padding-right:10%;padding-bottom:5%; padding-top:5%; border-right:none; font-size:120%;\" align=\"right\">"
-                        + "All Day"
-                        + "</td style=\"border-left:none;\"><td style=\"border-left:none\"><input type=\"checkbox\" id=\"allDayToggleButton\" onclick=\"return false;\""
-                        + (data.allDay === "true" ? "checked" : "") + " /></td></tr>",
-                "<tr><td id=\"startDate\" align=\"right\" style=\"padding-right:20%; padding-bottom:5%; padding-top:5%; font-size:120%;\" colspan=\"2\">"
+            "<tr><td style=\"padding: 10px;\"><input type=\"checkbox\" id=\"allDayToggleButton\" onclick=\"return false;\""
+            + (data.allDay === "true" ? "checked" : "") + " /></td><td id=\"allDayLabel\" style=\"padding: 10px;width: 99%;\">"
+            + "All Day"
+            + "</td></tr>",
+            "<tr><td id=\"startDate\"  style=\"padding: 10px;\" colspan=\"2\">"
                         + startDate.toLocaleString() + "</td>",
-                "<tr><td id=\"endDate\" align=\"right\" style=\"padding-right:20%; padding-bottom:5%; padding-top:5%; font-size:120%;\" colspan=\"2\">"
+            "<tr><td id=\"endDate\" style=\"  padding: 10px;\" colspan=\"2\">"
                         + endDate.toLocaleString() + "</td>",
-                "<tr><td id=\"recurrence\" align=\"right\" style=\"padding-right:20%; padding-bottom:5%; padding-top:5%; font-size:120%;\" colspan=\"2\">Recurrence: "
+            "<tr><td id=\"recurrence\" style=\"padding: 10px;\" colspan=\"2\">Recurrence: "
                         + recurrence + "</td>",
-                ((data.recurrenceEndTime && data.recurrence) ? "<tr><td id=\"recurrenceEndDate\" align=\"right\" style=\"padding-right:20%; padding-bottom:5%; padding-top:5%; font-size:120%;\" colspan=\"2\">Until: "
+            ((data.recurrenceEndTime && data.recurrence) ? "<tr><td id=\"recurrenceEndDate\" style=\"padding: 10px;\" colspan=\"2\">Until: "
                         + recurrenceEndDate.toDateString() + "</td>"
                         : ""),
-                "<tr><td id=\"eventNotes\" style=\"padding-bottom:5%; padding-top:5%; font-size:120%;\" colspan=\"2\">"
+            "<tr><td id=\"eventNotes\" style=\"padding: 10px;\" colspan=\"2\">"
                         + (data.notes ? data.notes : "<i style=\"color:#C0C0C0;\">Insert the notes</i>") + "</td>", "</table>" ].join("\n");
 
         var saveEventTemplate = [
                 "<section id=\"wr-calendar-emulator\" style=\"display:none; background: rgba(0, 0, 0, 0); position: absolute; width: 100%; height: 100%; z-index: 10000;\">",
                 "<div style=\"background: #fff; height: 100%; width: 100%; overflow: auto;\">",
-                "<div id=\"wr-contacts-title\" style=\"background: #3498db; font-size: 2em; color: #fff; text-align: center; font-weight: bold; line-height: 2em;\">",
+            "<div id=\"wr-contacts-title\" style=\"background: #000;  color: #fff; text-align: center; font-weight: bold; line-height: 44px;position: absolute;top: 0;left: 0;right: 0;padding: 0 10px;\">",
                 headerTable, "</div>", eventTable, "</div>", "</section>" ].join("\n");
 
         var saveEvent = $(saveEventTemplate);
@@ -104,7 +104,7 @@ function createStubs() {
                 var p = new Promise(
                         function(resolve, reject) {
                             calendar.show('slide', {
-                                direction: 'right',
+                                direction: 'down',
                                 duration: 250
                             });
                             var backButton = $('#platform-events-fire-back');
@@ -112,11 +112,11 @@ function createStubs() {
                             closeCalendarButton.click(function(e) {
                                 if (calendar.is(":visible")) {
                                     calendar.hide('slide', {
-                                        direction: 'right',
+                                        direction: 'down',
                                         duration: 250
                                     });
                                     closeCalendarButton.remove();
-                                    backButton.css("display", "initial");
+                                    backButton.css("display", "");
                                     resolve();
                                 }
                             });
@@ -134,7 +134,7 @@ function createStubs() {
                 var p = new Promise(
                         function(resolve, reject) {
                             calendar.show('slide', {
-                                direction: 'right',
+                                direction: 'down',
                                 duration: 250
                             });
                             var backButton = $('#platform-events-fire-back');
@@ -143,22 +143,22 @@ function createStubs() {
                             closeCalendarButton.click(function(e) {
                                 if (calendar.is(":visible")) {
                                     calendar.hide('slide', {
-                                        direction: 'right',
+                                        direction: 'down',
                                         duration: 250
                                     });
                                     closeCalendarButton.remove();
-                                    backButton.css("display", "initial");
+                                    backButton.css("display", "");
                                     resolve();
                                 }
                             });
                             $('#done').click(function(e) {
                                 if (calendar.is(":visible")) {
                                     calendar.hide('slide', {
-                                        direction: 'right',
+                                        direction: 'down',
                                         duration: 250
                                     });
                                     closeCalendarButton.remove();
-                                    backButton.css("display", "initial");
+                                    backButton.css("display", "");
                                     resolve();
                                 }
                             });
@@ -166,17 +166,18 @@ function createStubs() {
                             $('#cancel').click(function(e) {
                                 if (calendar.is(":visible")) {
                                     calendar.hide('slide', {
-                                        direction: 'right',
+                                        direction: 'down',
                                         duration: 250
                                     });
                                     closeCalendarButton.remove();
-                                    backButton.css("display", "initial");
+                                    backButton.css("display", "");
                                     resolve();
                                 }
                             });
 							backButton.css("display", "none");
                             $('#platform-events-fire-suspend').before(closeCalendarButton);
                         });
+                return p;
             },
             createEventInNamedCalendar: function(data) {
                 console.log("createEventInNamedCalendar", data);

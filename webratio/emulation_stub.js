@@ -32,7 +32,7 @@ function createStubs() {
                 "<section id=\"wr-calendar-emulator\" style=\"display:none; background: rgba(0, 0, 0, 0); position: absolute; width: 100%; height: 100%; z-index: 10000;\">",
                 "<div style=\"background: #fff; height: 100%; width: 100%; overflow: auto;\">",
             "<div id=\"wr-calendar-title\" style=\"background: #000;  color: #fff;  font-weight: bold; line-height: 44px;padding: 0 10px;position: absolute;top: 0;left: 0;right: 0;\">"
-                        + dateToShow.toDateString() + "</div>", calendarTable, "</div>", "</section>" ].join("\n");
+            + dateToShow.toDateString() + "<div id=\"cancel\" style=\"cursor:pointer;float:right;\">CANCEL</div></div>", calendarTable, "</div>", "</section>" ].join("\n");
 
         var opCalendar = $(openCalendarTemplate);
         $('#overlay-views').append(opCalendar);
@@ -107,9 +107,7 @@ function createStubs() {
                                 direction: 'down',
                                 duration: 250
                             });
-                            var backButton = $('#platform-events-fire-back');
-                            var closeCalendarButton = $("<button id=\"closeCalendar\" class=\"ui-button ui-widget ui-state-default ui-corner-all ui-button-text-only\"><span class=\"ui-button-text\">Back</span></button>");   closeCalendarButton.width("90px");
-                            closeCalendarButton.click(function(e) {
+                            var closeCalendar = function(e) {
                                 if (calendar.is(":visible")) {
                                     calendar.hide('slide', {
                                         direction: 'down',
@@ -119,7 +117,12 @@ function createStubs() {
                                     backButton.css("display", "");
                                     resolve();
                                 }
-                            });
+                            };
+                            var backButton = $('#platform-events-fire-back');
+                            var closeCalendarButton = $("<button id=\"closeCalendar\" class=\"ui-button ui-widget ui-state-default ui-corner-all ui-button-text-only\"><span class=\"ui-button-text\">Back</span></button>");
+                            closeCalendarButton.width("90px");
+                            closeCalendarButton.click(closeCalendar);
+                            $('#wr-calendar-emulator #cancel').click(closeCalendar);
                             backButton.css("display", "none");
                             $('#platform-events-fire-suspend').before(closeCalendarButton);
                         });
@@ -151,7 +154,7 @@ function createStubs() {
                                     resolve();
                                 }
                             });
-                            $('#done').click(function(e) {
+                            $('#wr-calendar-emulator #done').click(function(e) {
                                 if (calendar.is(":visible")) {
                                     calendar.hide('slide', {
                                         direction: 'down',
@@ -163,7 +166,7 @@ function createStubs() {
                                 }
                             });
 
-                            $('#cancel').click(function(e) {
+                            $('#wr-calendar-emulator #cancel').click(function(e) {
                                 if (calendar.is(":visible")) {
                                     calendar.hide('slide', {
                                         direction: 'down',
@@ -174,7 +177,7 @@ function createStubs() {
                                     resolve();
                                 }
                             });
-							backButton.css("display", "none");
+                            backButton.css("display", "none");
                             $('#platform-events-fire-suspend').before(closeCalendarButton);
                         });
                 return p;

@@ -426,7 +426,7 @@
     [myEvent addAlarm:reminder];
   }
 
-  if (recurrence != (id)[NSNull null]) {
+  if (recurrence != (id)[NSNull null] && recurrence != nil) {
     EKRecurrenceRule *rule = [[EKRecurrenceRule alloc] initRecurrenceWithFrequency: [self toEKRecurrenceFrequency:recurrence]
                                                                           interval: 1
                                                                                end: nil];

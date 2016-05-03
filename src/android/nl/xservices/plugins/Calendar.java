@@ -20,7 +20,10 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.text.SimpleDateFormat;
 import java.util.Date;
+
+import static android.provider.CalendarContract.Events;
 
 public class Calendar extends CordovaPlugin {
   public static final String ACTION_OPEN_CALENDAR = "openCalendar";
@@ -129,13 +132,13 @@ public class Calendar extends CordovaPlugin {
   private boolean createEventInteractively(JSONArray args) throws JSONException {
     final JSONObject jsonFilter = args.getJSONObject(0);
 
-    final Intent calIntent = new Intent(Intent.ACTION_EDIT)
+    final Intent calIntent = new Intent(Intent.ACTION_INSERT)
         .setType("vnd.android.cursor.item/event")
         .putExtra("title", jsonFilter.optString("title"))
         .putExtra("beginTime", jsonFilter.optLong("startTime"))
         .putExtra("endTime", jsonFilter.optLong("endTime"))
         .putExtra("hasAlarm", 1)
-        .putExtra("allDay", AbstractCalendarAccessor.isAllDayEvent(new Date(jsonFilter.optLong("startTime")), new Date(jsonFilter.optLong("endTime"))));
+        .putExtra("allDay", "true".equals(jsonFilter.optString("allDay")));
     // TODO can we pass a reminder here?
 
     // optional fields
@@ -144,6 +147,17 @@ public class Calendar extends CordovaPlugin {
     }
     if (!jsonFilter.isNull("notes")) {
       calIntent.putExtra("description", jsonFilter.optString("notes"));
+    }
+    if (!jsonFilter.isNull("recurrence")) {
+      if (jsonFilter.isNull("recurrenceEndTime")) {
+        calIntent.putExtra(Events.RRULE, "FREQ=" + jsonFilter.optString("recurrence").toUpperCase());
+      } else {
+        final SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMdd");
+        calIntent.putExtra(
+                Events.RRULE,
+                "FREQ=" + jsonFilter.optString("recurrence").toUpperCase() + ";UNTIL="
+                        + sdf.format(new Date(jsonFilter.optLong("recurrenceEndTime"))));
+      }
     }
 
     this.cordova.startActivityForResult(this, calIntent, RESULT_CODE_CREATE);
@@ -294,9 +308,15 @@ public class Calendar extends CordovaPlugin {
 
   public void onActivityResult(int requestCode, int resultCode, Intent data) {
     if (requestCode == RESULT_CODE_CREATE) {
-      if (resultCode == Activity.RESULT_OK || resultCode == Activity.RESULT_CANCELED) {
+      if (resultCode == Activity.RESULT_OK) {
         // resultCode may be 0 (RESULT_CANCELED) even when it was created, so passing nothing is the clearest option here
-        callback.success();
+        ContentResolver cr = this.cordova.getActivity().getContentResolver();
+        Cursor cursor = cr.query(Events.CONTENT_URI, new String[] { "MAX(_id) as max_id" }, null, null, "_id");
+        cursor.moveToFirst();
+        long maxVal = cursor.getLong(cursor.getColumnIndex("max_id"));
+        callback.success(Long.toString(maxVal));
+      } else if (resultCode == Activity.RESULT_CANCELED) {
+        callback.success("CANCELED");
       }
     } else if (requestCode == RESULT_CODE_OPENCAL) {
       callback.success();

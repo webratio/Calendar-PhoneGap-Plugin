@@ -90,13 +90,16 @@ Calendar.prototype.createEvent = function (title, location, notes, startDate, en
   Calendar.prototype.createEventWithOptions(title, location, notes, startDate, endDate, {}, successCallback, errorCallback);
 };
 
-Calendar.prototype.createEventInteractively = function (title, location, notes, startDate, endDate, successCallback, errorCallback) {
+Calendar.prototype.createEventInteractively = function(title, location, notes, startDate, endDate, allDay, recurrence, recurrenceEndTime, successCallback, errorCallback) {
   cordova.exec(successCallback, errorCallback, "Calendar", "createEventInteractively", [{
     "title": title,
     "location": location,
     "notes": notes,
     "startTime": startDate instanceof Date ? startDate.getTime() : null,
     "endTime": endDate instanceof Date ? endDate.getTime() : null,
+    "allDay": allDay,
+    "recurrence": recurrence,
+    "recurrenceEndTime": recurrenceEndTime,
     "options": Calendar.prototype.getCalendarOptions()
   }])
 };

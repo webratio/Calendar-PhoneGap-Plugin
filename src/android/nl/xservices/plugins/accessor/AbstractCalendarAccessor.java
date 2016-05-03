@@ -33,6 +33,7 @@
 package nl.xservices.plugins.accessor;
 
 import android.content.ContentResolver;
+import android.content.ContentUris;
 import android.content.ContentValues;
 import android.database.Cursor;
 import android.net.Uri;
@@ -196,15 +197,16 @@ public abstract class AbstractCalendarAccessor {
     List<String> selectionList = new ArrayList<String>();
 
     if (title != null) {
-      selection += Events.TITLE + "=?";
-      selectionList.add(title+"%");
+      //selection += Events.TITLE + "=?";
+      selection += Events.TITLE + " LIKE ?";
+      selectionList.add("%" + title + "%");
     }
-    if (location != null) {
+    if (location != null && !location.equals("")) {
       if (!"".equals(selection)) {
         selection += " AND ";
       }
-      selection += Events.EVENT_LOCATION + "=?";
-      selectionList.add(location);
+      selection += Events.EVENT_LOCATION + " LIKE ?";
+      selectionList.add("%" + location + "%");
     }
 
     String[] selectionArgs = new String[selectionList.size()];
@@ -235,8 +237,8 @@ public abstract class AbstractCalendarAccessor {
 
   private String[] getActiveCalendarIds() {
     Cursor cursor = queryCalendars(new String[]{
-        this.getKey(KeyIndex.CALENDARS_ID)
-    },
+            this.getKey(KeyIndex.CALENDARS_ID)
+        },
         this.getKey(KeyIndex.CALENDARS_VISIBLE) + "=1", null, null);
     String[] calendarIds = null;
     if (cursor.moveToFirst()) {
@@ -247,6 +249,7 @@ public abstract class AbstractCalendarAccessor {
         calendarIds[i] = cursor.getString(col);
         i += 1;
       } while (cursor.moveToNext());
+      cursor.close();
     }
     return calendarIds;
   }
@@ -267,6 +270,7 @@ public abstract class AbstractCalendarAccessor {
         calendar.put("name", cursor.getString(cursor.getColumnIndex(this.getKey(KeyIndex.CALENDARS_NAME))));
         calendarsWrapper.put(calendar);
       } while (cursor.moveToNext());
+      cursor.close();
     }
     return calendarsWrapper;
   }
@@ -322,6 +326,7 @@ public abstract class AbstractCalendarAccessor {
         event.allDay = cursor.getInt(cols[7]) != 0;
         eventsMap.put(event.id, event);
       } while (cursor.moveToNext());
+      cursor.close();
     }
     return eventsMap;
   }
@@ -373,6 +378,7 @@ public abstract class AbstractCalendarAccessor {
         attendee.status = cursor.getString(cols[4]);
         array.add(attendee);
       } while (cursor.moveToNext());
+      cursor.close();
     }
     return attendeeMap;
   }
@@ -409,71 +415,64 @@ public abstract class AbstractCalendarAccessor {
   }
 
   public boolean deleteEvent(Uri eventsUri, long startFrom, long startTo, String title, String location) {
-
-    // filter
-    String where = "";
-    List<String> selectionList = new ArrayList<String>();
-
-    if (location != null) {
-      if (!"".equals(where)) {
-        where += " AND ";
-      }
-      where += Events.EVENT_LOCATION + "=?";
-      selectionList.add(location);
-    }
-    if (startFrom > 0) {
-      if (!"".equals(where)) {
-        where += " AND ";
-      }
-      where += Events.DTSTART + "=?";
-      selectionList.add("" + startFrom);
-    }
-    if (startTo > 0) {
-      if (!"".equals(where)) {
-        where += " AND ";
-      }
-      where += Events.DTEND + "=?";
-      selectionList.add("" + startTo);
-    }
-
-    String[] selectionArgs = new String[selectionList.size()];
     ContentResolver resolver = this.cordova.getActivity().getApplicationContext().getContentResolver();
-    int nrDeletedRecords = resolver.delete(eventsUri, where, selectionList.toArray(selectionArgs));
+    Event[] events = fetchEventInstances(title, location,startFrom, startTo);
+    int nrDeletedRecords = 0;
+    if (events != null) {
+      for (Event event : events) {
+        Uri eventUri = ContentUris.withAppendedId(eventsUri, Integer.parseInt(event.eventId));
+        nrDeletedRecords = resolver.delete(eventUri, null, null);
+      }
+    }
     return nrDeletedRecords > 0;
   }
 
-  public void createEvent(Uri eventsUri, String title, long startTime, long endTime, String description,
-                          String location, Long firstReminderMinutes, Long secondReminderMinutes,
-                          String recurrence, Long recurrenceEndTime) {
-      ContentResolver cr = this.cordova.getActivity().getContentResolver();
-      ContentValues values = new ContentValues();
-      final boolean allDayEvent = isAllDayEvent(new Date(startTime), new Date(endTime));
+  public String createEvent(Uri eventsUri, String title, long startTime, long endTime, String description,
+                            String location, Long firstReminderMinutes, Long secondReminderMinutes,
+                            String recurrence, int recurrenceInterval, Long recurrenceEndTime, Integer calendarId, String url) {
+    ContentResolver cr = this.cordova.getActivity().getContentResolver();
+    ContentValues values = new ContentValues();
+    final boolean allDayEvent = isAllDayEvent(new Date(startTime), new Date(endTime));
+    if (allDayEvent) {
+      //all day events must be in UTC time zone per Android specification, getOffset accounts for daylight savings time
+      values.put(Events.EVENT_TIMEZONE, "UTC");
+      values.put(Events.DTSTART, startTime + TimeZone.getDefault().getOffset(startTime));
+      values.put(Events.DTEND, endTime + TimeZone.getDefault().getOffset(endTime));
+    } else {
       values.put(Events.EVENT_TIMEZONE, TimeZone.getDefault().getID());
-      values.put(Events.ALL_DAY, allDayEvent ? 1 : 0);
-      values.put(Events.DTSTART, allDayEvent ? startTime+(1000*60*60*24) : startTime);
+      values.put(Events.DTSTART, startTime);
       values.put(Events.DTEND, endTime);
-      values.put(Events.TITLE, title);
-      values.put(Events.DESCRIPTION, description);
-      values.put(Events.HAS_ALARM, 1);
-      values.put(Events.CALENDAR_ID, 1);
-      values.put(Events.EVENT_LOCATION, location);
-
-      if (recurrence != null) {
-        if (recurrenceEndTime == null) {
-          values.put(Events.RRULE, "FREQ=" + recurrence.toUpperCase());
-        } else {
-          final SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMdd");
-          values.put(Events.RRULE, "FREQ=" + recurrence.toUpperCase() + ";UNTIL=" + sdf.format(new Date(recurrenceEndTime));
-        }
+    }
+    values.put(Events.ALL_DAY, allDayEvent ? 1 : 0);
+    values.put(Events.TITLE, title);
+    // there's no separate url field, so adding it to the notes
+    if (url != null) {
+      if (description == null) {
+        description = url;
+      } else {
+        description += " " + url;
       }
+    }
+    values.put(Events.DESCRIPTION, description);
+    values.put(Events.HAS_ALARM, (firstReminderMinutes == null && secondReminderMinutes == null) ? 0 : 1);
+    values.put(Events.CALENDAR_ID, calendarId);
+    values.put(Events.EVENT_LOCATION, location);
 
-      Uri uri = cr.insert(eventsUri, values);
+    if (recurrence != null) {
+      if (recurrenceEndTime == null) {
+        values.put(Events.RRULE, "FREQ=" + recurrence.toUpperCase() + ";INTERVAL=" + recurrenceInterval);
+      } else {
+        final SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMdd");
+        values.put(Events.RRULE, "FREQ=" + recurrence.toUpperCase() + ";INTERVAL=" + recurrenceInterval + ";UNTIL=" + sdf.format(new Date(recurrenceEndTime))+"T000000Z");
+      }
+    }
 
-      Log.d(LOG_TAG, "Added to ContentResolver");
+    // runtime exceptions are dealt with by the caller
+    Uri uri = cr.insert(eventsUri, values);
+    String createdEventID = uri.getLastPathSegment();
+    Log.d(LOG_TAG, "Created event with ID " + createdEventID);
 
-      // TODO ?
-      getActiveCalendarIds();
-
+    try {
       if (firstReminderMinutes != null) {
         ContentValues reminderValues = new ContentValues();
         reminderValues.put("event_id", Long.parseLong(uri.getLastPathSegment()));
@@ -489,6 +488,10 @@ public abstract class AbstractCalendarAccessor {
         reminderValues.put("method", 1);
         cr.insert(Uri.parse(CONTENT_PROVIDER + CONTENT_PROVIDER_PATH_REMINDERS), reminderValues);
       }
+    } catch (Exception e) {
+      Log.e(LOG_TAG, "Creating reminders failed, ignoring since the event was created.", e);
+    }
+    return createdEventID;
   }
 
   public void createCalendar(String calendarName) {

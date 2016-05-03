@@ -43,27 +43,28 @@ function createStubs() {
         $('#wr-calendar-emulator').remove();
         var startDate = new Date();
         var endDate = new Date();
-        if (data.startTime) {
-            startDate = new Date(data.startTime);
+        if (data["startTime"]) {
+            startDate = new Date(data["startTime"]);
         }
-        if (data.endTime) {
-            endDate = new Date(data.endTime);
+        if (data["endTime"]) {
+            endDate = new Date(data["endTime"]);
         }
-        var recurrence = data.recurrence;
+        var recurrence = data["options"] && data["options"]["recurrence"];
         if (!recurrence) {
             recurrence = "none";
         }
         var recurrenceEndDate;
-        if (data.recurrenceEndTime) {
-            recurrenceEndDate = new Date(data.recurrenceEndTime);
+        if (data["options"] && data["options"]["recurrenceEndTime"]) {
+            recurrenceEndDate = new Date(data["options"]["recurrenceEndTime"]);
         }
+        var isAllDay = ((endDate.valueOf() - startDate.valueOf()) % 86400000 === 0);
         var headerTable = "<table style=\"width:100%; border-collapse:collapse;\"><tr><td id=\"done\" style=\"cursor:pointer;\">SAVE</td><td style=\"width: 99%;color: #E6E6E6;\">New Event</td><td id=\"cancel\" style=\"cursor:pointer;\">CANCEL</td><tr></table>";
         var eventTable = [
                 "<table border=\"0\" style=\"width:100%;border-collapse: collapse; margin: 44px 0;\">",
             "<tr><td id=\"eventTitle\" style=\"padding: 10px;  border-bottom: 1px solid #ddd;font-size: 1.2em;\" colspan=\"2\">"
-                        + (data.title ? data.title : "<i style=\"color:#C0C0C0;\">Insert the title</i>") + "</td></tr>",
+                        + (data["title"] ? data["title"] : "<i style=\"color:#C0C0C0;\">Insert the title</i>") + "</td></tr>",
             "<tr><td style=\"padding: 10px;\"><input type=\"checkbox\" id=\"allDayToggleButton\" onclick=\"return false;\""
-            + (data.allDay === "true" ? "checked" : "") + " /></td><td id=\"allDayLabel\" style=\"padding: 10px;width: 99%;\">"
+            + (isAllDay ? "checked" : "") + " /></td><td id=\"allDayLabel\" style=\"padding: 10px;width: 99%;\">"
             + "All Day"
             + "</td></tr>",
             "<tr><td id=\"startDate\"  style=\"padding: 10px;\" colspan=\"2\">"
@@ -72,11 +73,11 @@ function createStubs() {
                         + endDate.toLocaleString() + "</td>",
             "<tr><td id=\"recurrence\" style=\"padding: 10px;\" colspan=\"2\">Recurrence: "
                         + recurrence + "</td>",
-            ((data.recurrenceEndTime && data.recurrence) ? "<tr><td id=\"recurrenceEndDate\" style=\"padding: 10px;\" colspan=\"2\">Until: "
+            ((data["options"] && data["options"]["recurrenceEndTime"] && data["options"]["recurrence"]) ? "<tr><td id=\"recurrenceEndDate\" style=\"padding: 10px;\" colspan=\"2\">Until: "
                         + recurrenceEndDate.toDateString() + "</td>"
                         : ""),
             "<tr><td id=\"eventNotes\" style=\"padding: 10px;\" colspan=\"2\">"
-                        + (data.notes ? data.notes : "<i style=\"color:#C0C0C0;\">Insert the notes</i>") + "</td>", "</table>" ].join("\n");
+                        + (data["notes"] ? data["notes"] : "<i style=\"color:#C0C0C0;\">Insert the notes</i>") + "</td>", "</table>" ].join("\n");
 
         var saveEventTemplate = [
                 "<section id=\"wr-calendar-emulator\" style=\"display:none; background: rgba(0, 0, 0, 0); position: absolute; width: 100%; height: 100%; z-index: 10000;\">",
@@ -92,13 +93,32 @@ function createStubs() {
 
     return {
         Calendar: {
-            createCalendar: function(mergedOptions) {
-                console.log("createCalendar", mergedOptions);
+            hasReadPermission: function() {
+                console.log("hasReadPermission");
             },
-            deleteCalendar: function(calendarName) {
-                console.log("deleteCalendar", calendarName);
+            requestReadPermission: function() {
+                console.log("requestReadPermission");
             },
-            openCalendar: function(date) {
+            hasWritePermission: function() {
+              console.log("hasWritePermission");
+            },
+            requestWritePermission: function() {
+                console.log("requestWritePermission");
+            },
+            hasReadWritePermission: function() {
+                console.log("hasReadWritePermission");
+            },
+            requestReadWritePermission: function() {
+                console.log("requestReadWritePermission");
+            },
+            createCalendar: function(options) {
+                console.log("createCalendar", options);
+            },
+            deleteCalendar: function(options) {
+                console.log("deleteCalendar", options);
+            },
+            openCalendar: function(options) {
+                var date = options["date"];
                 console.log("closeCalendar", date);
                 calendar = initOpenCalendar(date);
                 var p = new Promise(
@@ -182,8 +202,11 @@ function createStubs() {
                         });
                 return p;
             },
-            createEventInNamedCalendar: function(data) {
-                console.log("createEventInNamedCalendar", data);
+            findEventWithOptions: function(data) {
+                console.log("findEventWithOptions", data);
+            },
+            findAllEventsInNamedCalendar: function(data) {
+                console.log("findAllEventsInNamedCalendar", data);
             },
             deleteEvent: function(data) {
                 console.log("deleteEvent", data);
@@ -191,23 +214,14 @@ function createStubs() {
             deleteEventFromNamedCalendar: function(data) {
                 console.log("deleteEventFromNamedCalendar", data);
             },
-            findEvent: function(data) {
-                console.log("findEvent", data);
+            modifyEventWithOptions: function(calendarName) {
+                console.log("modifyEventWithOptions", calendarName);
             },
-            findAllEventsInNamedCalendar: function(calendarName) {
-                console.log("findAllEventsInNamedCalendar", calendarName);
+            listEventsInRange: function(range) {
+                console.log("listEventsInRange", range);
             },
-            modifyEvent: function(data) {
-                console.log("modifyEvent", data);
-            },
-            modifyEventInNamedCalendar: function(data) {
-                console.log("modifyEventInNamedCalendar", data);
-            },
-            listEventsInRange: function(data) {
-                console.log("listEventsInRange", data);
-            },
-            listCalendars: function(data) {
-                console.log("listCalendars", data);
+            listCalendars: function() {
+                console.log("listCalendars");
             }
         }
     };

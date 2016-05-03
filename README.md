@@ -2,6 +2,11 @@
 
 for iOS and Android, by [Eddy Verbruggen](http://www.x-services.nl)
 
+
+[![paypal](https://www.paypalobjects.com/en_US/i/btn/btn_donate_SM.gif)](https://www.paypal.com/cgi-bin/webscr?cmd=_donations&business=eddyverbruggen%40gmail%2ecom&lc=US&item_name=cordova%2dplugin%2dcalendar&currency_code=EUR&bn=PP%2dDonationsBF%3abtn_donate_SM%2egif%3aNonHosted)
+Every now and then kind folks ask me how they can give me all their money.
+Of course I'm happy to receive any amount but I'm just as happy if you simply 'star' this project.
+
 <table width="100%">
   <tr>
     <td width="100"><a href="http://plugins.telerik.com/plugin/calendar"><img src="http://www.x-services.nl/github-images/telerik-verified-plugins-marketplace.png" width="97px" height="71px" alt="Marketplace logo"/></a></td>
@@ -11,7 +16,7 @@ for iOS and Android, by [Eddy Verbruggen](http://www.x-services.nl)
 
 1. [Description](https://github.com/EddyVerbruggen/Calendar-PhoneGap-Plugin#1-description)
 2. [Installation](https://github.com/EddyVerbruggen/Calendar-PhoneGap-Plugin#2-installation)
-	2. [Automatically (CLI / Plugman)](https://github.com/EddyVerbruggen/Calendar-PhoneGap-Plugin#automatically-cli--plugman)
+	2. [Automatically](https://github.com/EddyVerbruggen/Calendar-PhoneGap-Plugin#automatically)
 	2. [Manually](https://github.com/EddyVerbruggen/Calendar-PhoneGap-Plugin#manually)
 	2. [PhoneGap Build](https://github.com/EddyVerbruggen/Calendar-PhoneGap-Plugin#phonegap-build)
 3. [Usage](https://github.com/EddyVerbruggen/Calendar-PhoneGap-Plugin#3-usage)
@@ -38,19 +43,15 @@ This plugin allows you to add events to the Calendar of the mobile device.
 
 ## 2. Installation
 
-### Automatically (CLI / Plugman)
-Calendar is compatible with [Cordova Plugman](https://github.com/apache/cordova-plugman) and ready for the [PhoneGap 3.0 CLI](http://docs.phonegap.com/en/3.0.0/guide_cli_index.md.html#The%20Command-line%20Interface_add_features), here's how it works with the CLI:
+### Automatically
+Latest release on npm:
+```
+$ cordova plugin add cordova-plugin-calendar
+```
 
-```
-$ phonegap local plugin add https://github.com/EddyVerbruggen/Calendar-PhoneGap-Plugin.git
-```
-or
+Bleeding edge, from github:
 ```
 $ cordova plugin add https://github.com/EddyVerbruggen/Calendar-PhoneGap-Plugin.git
-```
-and run this command afterwards:
-```
-$ cordova build
 ```
 
 ### Manually
@@ -108,17 +109,38 @@ use one function of this plugin: `createEventInteractively`.
 
 ### PhoneGap Build
 
-Add the following xml to your `config.xml` to always use the latest version of this plugin:
+Add the following xml to your `config.xml` to always use the latest npm version of this plugin:
 ```xml
-<gap:plugin name="nl.x-services.plugins.calendar" />
-```
-or to use a specific version:
-```xml
-<gap:plugin name="nl.x-services.plugins.calendar" version="4.2.8" />
+<plugin name="cordova-plugin-calendar" />
 ```
 
+Also, make sure you're building with Gradle by adding this to your `config.xml` file:
+```xml
+<preference name="android-build-tool" value="gradle" />
+```
 
 ## 3. Usage
+
+The table gives an overview of basic operation compatibility:
+
+Operation                           | Comment     | iOS | Android
+----------------------------------- | ----------- | --- | -------
+createCalendar                      |             | yes | 
+deleteCalendar                      |             | yes | 
+createEvent                         | silent      | yes | yes (on Android < 4 dialog is shown)
+createEventWithOptions              | silent      | yes | yes (on Android < 4 dialog is shown)
+createEventInteractively            | interactive | yes | yes
+createEventInteractivelyWithOptions | interactive | yes | yes
+findEvent                           |             | yes | yes
+findEventWithOptions                |             | yes | yes
+listEventsInRange                   |             |     | yes
+listCalendars                       |             | yes | yes
+findAllEventsInNamedCalendars       |             | yes | 
+modifyEvent                         |             | yes | 
+modifyEventWithOptions              |             | yes | 
+deleteEvent                         |             | yes | yes
+deleteEventFromNamedCalendar        |             | yes | 
+openCalendar                        |             | yes | yes
 
 Basic operations, you'll want to copy-paste this for testing purposes:
 
@@ -153,18 +175,36 @@ Basic operations, you'll want to copy-paste this for testing purposes:
 
   // Added these options in version 4.2.4:
   calOptions.recurrence = "monthly"; // supported are: daily, weekly, monthly, yearly
-  calOptions.recurrenceEndDate = new Date(2015,10,1,0,0,0,0,0); // leave null to add events into infinity and beyond
+  calOptions.recurrenceEndDate = new Date(2016,10,1,0,0,0,0,0); // leave null to add events into infinity and beyond
   calOptions.calendarName = "MyCreatedCalendar"; // iOS only
+  calOptions.calendarId = 1; // Android only, use id obtained from listCalendars() call which is described below. This will be ignored on iOS in favor of calendarName and vice versa. Default: 1.
+
+  // This is new since 4.2.7:
+  calOptions.recurrenceInterval = 2; // once every 2 months in this case, default: 1
+
+  // And the URL can be passed since 4.3.2 (will be appended to the notes on Android as there doesn't seem to be a sep field)
+  calOptions.url = "https://www.google.com";
+
+  // on iOS the success handler receives the event ID (since 4.3.6)
   window.plugins.calendar.createEventWithOptions(title,eventLocation,notes,startDate,endDate,calOptions,success,error);
 
   // create an event interactively
   window.plugins.calendar.createEventInteractively(title,eventLocation,notes,startDate,endDate,success,error);
 
-  // create an event in a named calendar (iOS only for now)
+  // create an event interactively with the calOptions object as shown above
+  window.plugins.calendar.createEventInteractivelyWithOptions(title,eventLocation,notes,startDate,endDate,calOptions,success,error);
+
+  // create an event in a named calendar (iOS only, deprecated, use createEventWithOptions instead)
   window.plugins.calendar.createEventInNamedCalendar(title,eventLocation,notes,startDate,endDate,calendarName,success,error);
 
   // find events (on iOS this includes a list of attendees (if any))
   window.plugins.calendar.findEvent(title,eventLocation,notes,startDate,endDate,success,error);
+
+  // if you need to find events in a specific calendar, use this one. All options are currently ignored when finding events, except for the calendarName.
+  var calOptions = window.plugins.calendar.getCalendarOptions();
+  calOptions.calendarName = "MyCreatedCalendar"; // iOS only
+  calOptions.id = "D9B1D85E-1182-458D-B110-4425F17819F1"; // iOS only, get it from createEventWithOptions (if not found, we try matching against title, etc)
+  window.plugins.calendar.findEventWithOptions(title,eventLocation,notes,startDate,endDate,calOptions,success,error);
 
   // list all events in a date range (only supported on Android for now)
   window.plugins.calendar.listEventsInRange(startDate,endDate,success,error);
@@ -178,6 +218,16 @@ Basic operations, you'll want to copy-paste this for testing purposes:
   // change an event (iOS only for now)
   var newTitle = "New title!";
   window.plugins.calendar.modifyEvent(title,eventLocation,notes,startDate,endDate,newTitle,eventLocation,notes,startDate,endDate,success,error);
+
+  // or to add a reminder, make it recurring, change the calendar, or the url, use this one:
+  var filterOptions = window.plugins.calendar.getCalendarOptions(); // or {} or null for the defaults
+  filterOptions.calendarName = "Bla"; // iOS only
+  filterOptions.id = "D9B1D85E-1182-458D-B110-4425F17819F1"; // iOS only, get it from createEventWithOptions (if not found, we try matching against title, etc)
+  var newOptions = window.plugins.calendar.getCalendarOptions();
+  newOptions.calendaName = "New Bla"; // make sure this calendar exists before moving the event to it
+  // not passing in reminders will wipe them from the event. To wipe the default first reminder (60), set it to null.
+  newOptions.firstReminderMinutes = 120;
+  window.plugins.calendar.modifyEventWithOptions(title,eventLocation,notes,startDate,endDate,newTitle,eventLocation,notes,startDate,endDate,filterOptions,newOptions,success,error);
 
   // delete an event (you can pass nulls for irrelevant parameters, note that on Android `notes` is ignored). The dates are mandatory and represent a date range to delete events in.
   // note that on iOS there is a bug where the timespan must not be larger than 4 years, see issue 102 for details.. call this method multiple times if need be
@@ -211,6 +261,40 @@ Creating an event for 3 full days
   var endDate = new Date(2014,2,27,0,0,0,0,0);
 ```
 
+### Android 6 (M) Permissions
+On Android 6 you need to request permission to use the Calenda at runtime when targeting API level 23+.
+Even if the uses-permission tags the Calendar are present in `AndroidManifest.xml`.
+
+Note that the hasPermission functions will return true when:
+
+- You're running this on iOS, or
+- You're targeting an API level lower than 23, or
+- You're using Android < 6, or
+- You've already granted permission.
+
+```js
+  function hasReadWritePermission() {
+    window.plugins.calendar.hasReadWritePermission(
+      function(result) {
+        // if this is 'false' you probably want to call 'requestReadWritePermission' now
+        alert(result);
+      }
+    )
+  }
+
+  function requestReadWritePermission() {
+    // no callbacks required as this opens a popup which returns async
+    window.plugins.calendar.requestReadWritePermission();
+  }
+```
+
+There are similar methods for Read and Write access only (`hasReadPermission`, etc),
+although it looks like that if you request read permission you can write as well,
+so you might as well stick with the example above.
+
+Note that backward compatibility was added by checking for read or write permission in the relevant plugins functions.
+If permission is needed the plugin will now show the permission request popup.
+The user will then need to allow access and invoke the same method again after doing so.
 
 ## 4. CREDITS ##
 

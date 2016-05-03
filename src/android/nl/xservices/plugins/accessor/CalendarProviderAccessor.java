@@ -41,6 +41,7 @@ import android.provider.CalendarContract.Events;
 import android.provider.CalendarContract.Instances;
 import org.apache.cordova.CordovaInterface;
 
+import java.lang.Integer;
 import java.util.EnumMap;
 
 public class CalendarProviderAccessor extends AbstractCalendarAccessor {
@@ -76,8 +77,6 @@ public class CalendarProviderAccessor extends AbstractCalendarAccessor {
     keys.put(KeyIndex.ATTENDEES_STATUS, Attendees.ATTENDEE_STATUS);
     return keys;
   }
-
-  ;
 
   @Override
   protected Cursor queryAttendees(String[] projection, String selection,
@@ -120,11 +119,12 @@ public class CalendarProviderAccessor extends AbstractCalendarAccessor {
   }
 
   @Override
-  public void createEvent(Uri eventsUri, String title, long startTime, long endTime,
-                             String description, String location, Long firstReminderMinutes, Long secondReminderMinutes,
-                             String recurrence, Long recurrenceEndTime) {
+  public String createEvent(Uri eventsUri, String title, long startTime, long endTime,
+                          String description, String location, Long firstReminderMinutes, Long secondReminderMinutes,
+                          String recurrence, int recurrenceInterval, Long recurrenceEndTime, Integer calendarId,
+                          String url) {
     eventsUri = eventsUri == null ? Uri.parse(CONTENT_PROVIDER + CONTENT_PROVIDER_PATH_EVENTS) : eventsUri;
-    super.createEvent(eventsUri, title, startTime, endTime, description, location,
-        firstReminderMinutes, secondReminderMinutes, recurrence, recurrenceEndTime);
+    return super.createEvent(eventsUri, title, startTime, endTime, description, location,
+        firstReminderMinutes, secondReminderMinutes, recurrence, recurrenceInterval, recurrenceEndTime, calendarId, url);
   }
 }

@@ -32,11 +32,24 @@ namespace WPCordovaClassLib.Cordova.Commands
             saveAppointmentTask.Subject = this.calendarEvent.Title;
             saveAppointmentTask.Location = this.calendarEvent.Location;
             saveAppointmentTask.Details = this.calendarEvent.Notes;
-            saveAppointmentTask.IsAllDayEvent = this.calendarEvent.AllDay;
+            saveAppointmentTask.IsAllDayEvent = IsAllDayEvent(saveAppointmentTask.StartTime, saveAppointmentTask.EndTime);
             saveAppointmentTask.Reminder = GetReminder(this.calendarEvent.Options.FirstReminderMinutes);
             saveAppointmentTask.AppointmentStatus = Microsoft.Phone.UserData.AppointmentStatus.Busy;
             saveAppointmentTask.Show();
             this.DispatchCommandResult(new PluginResult(PluginResult.Status.OK));
+        }
+
+        private bool IsAllDayEvent(DateTime? startDate, DateTime? endDate)
+        {
+            if (startDate.HasValue && endDate.HasValue)
+            {
+                DateTime localStart = startDate.Value.ToLocalTime();
+                DateTime localEnd = endDate.Value.ToLocalTime();
+                return ((localEnd.Ticks - localStart.Ticks) % (24L * 60 * 60 * 10000000) == 0)
+                    && localStart.Hour == 0 && localStart.Minute == 0 && localStart.Second == 0
+                    && localEnd.Hour == 0 && localEnd.Minute == 0 && localEnd.Second == 0;
+            }
+            return false;
         }
 
         public void openCalendar(string options)

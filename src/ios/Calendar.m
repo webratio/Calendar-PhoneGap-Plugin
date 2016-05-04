@@ -862,7 +862,7 @@
 
   switch (action) {
     case EKEventEditViewActionCanceled:
-      pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_NO_RESULT];
+      pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK];
       break;
 
     case EKEventEditViewActionSaved:
@@ -871,11 +871,11 @@
       break;
 
     case EKEventEditViewActionDeleted:
-      pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_NO_RESULT];
+      pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK];
       break;
 
     default:
-      pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_NO_RESULT];
+      pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK];
       break;
   }
 

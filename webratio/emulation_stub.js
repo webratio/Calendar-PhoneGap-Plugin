@@ -27,7 +27,7 @@ function createStubs() {
         calendarTable += "</table>";
 
         $('#wr-calendar-emulator').remove();
-        var dateToShow = new Date(date.date)
+        var dateToShow = new Date(date)
         var openCalendarTemplate = [
                 "<section id=\"wr-calendar-emulator\" style=\"display:none; background: rgba(0, 0, 0, 0); position: absolute; width: 100%; height: 100%; z-index: 10000;\">",
                 "<div style=\"background: #fff; height: 100%; width: 100%; overflow: auto;\">",

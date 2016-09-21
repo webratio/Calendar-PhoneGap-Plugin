@@ -3,7 +3,7 @@
     xmlns="http://apache.org/cordova/ns/plugins/1.0"
     xmlns:android="http://schemas.android.com/apk/res/android"
     id="cordova-plugin-calendar"
-    version="4.4.7.2wr">
+    version="4.4.7.3wr">
 
   <name>Calendar</name>
 
@@ -106,11 +106,8 @@
                  target-dir="src/nl/xservices/plugins/accessor"/>
     <source-file src="src/android/nl/xservices/plugins/accessor/LegacyCalendarAccessor.java"
                  target-dir="src/nl/xservices/plugins/accessor"/>
-    <dependency id="com.webratio.androidsupport" version="23.2.1" />
-    <!--
-    <dependency id="com.google.playservices" version="23.0.0.2wr" />
-    <framework src="com.android.support:support-v4:+" />
-    -->
+    
+    <framework src="com.android.support:support-v13:+"/>
   </platform>
 
   <!-- wp8 -->

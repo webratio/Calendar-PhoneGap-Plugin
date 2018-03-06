@@ -57,6 +57,7 @@ function createStubs() {
         if (data["options"] && data["options"]["recurrenceEndTime"]) {
             recurrenceEndDate = new Date(data["options"]["recurrenceEndTime"]);
         }
+        var eventLocation = data["location"];
         var isAllDay = ((endDate.valueOf() - startDate.valueOf()) % 86400000 === 0);
         var headerTable = "<table style=\"width:100%; border-collapse:collapse;\"><tr><td id=\"done\" style=\"cursor:pointer;\">SAVE</td><td style=\"width: 99%;color: #E6E6E6;\">New Event</td><td id=\"cancel\" style=\"cursor:pointer;\">CANCEL</td><tr></table>";
         var eventTable = [
@@ -76,6 +77,8 @@ function createStubs() {
             ((data["options"] && data["options"]["recurrenceEndTime"] && data["options"]["recurrence"]) ? "<tr><td id=\"recurrenceEndDate\" style=\"padding: 10px;\" colspan=\"2\">Until: "
                         + recurrenceEndDate.toDateString() + "</td>"
                         : ""),
+            "<tr><td id=\"location\" style=\"padding: 10px;\" colspan=\"2\">Location: "
+                        + eventLocation + "</td>",
             "<tr><td id=\"eventNotes\" style=\"padding: 10px;\" colspan=\"2\">"
                         + (data["notes"] ? data["notes"] : "<i style=\"color:#C0C0C0;\">Insert the notes</i>") + "</td>", "</table>" ].join("\n");
 

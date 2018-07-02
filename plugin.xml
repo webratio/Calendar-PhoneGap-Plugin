@@ -3,7 +3,7 @@
     xmlns="http://apache.org/cordova/ns/plugins/1.0"
     xmlns:android="http://schemas.android.com/apk/res/android"
     id="cordova-plugin-calendar"
-    version="4.6.0.2wr">
+    version="4.6.0.3wr">
 
   <name>Calendar</name>
 
@@ -84,7 +84,7 @@
       </array>
     </config-file>
 	<!-- Usage description of the Calendar for iOS 6+, mandatory since iOS 10 -->
-    <preference name="CALENDAR_USAGE_DESCRIPTION" default=" " />
+    <preference name="CALENDAR_USAGE_DESCRIPTION" default="need calendar access to take dates" />
     <config-file target="*-Info.plist" parent="NSCalendarsUsageDescription">
       <string>$CALENDAR_USAGE_DESCRIPTION</string>
     </config-file>

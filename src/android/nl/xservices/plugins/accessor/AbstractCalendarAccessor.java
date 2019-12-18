@@ -19,6 +19,7 @@ import java.text.SimpleDateFormat;
 import java.util.*;
 
 import static android.provider.CalendarContract.Events;
+import android.provider.CalendarContract.Instances;
 
 public abstract class AbstractCalendarAccessor {
 
@@ -130,6 +131,7 @@ public abstract class AbstractCalendarAccessor {
 
     protected enum KeyIndex {
         CALENDARS_ID,
+        IS_PRIMARY,
         CALENDARS_NAME,
         CALENDARS_VISIBLE,
         CALENDARS_DISPLAY_NAME,
@@ -271,7 +273,8 @@ public abstract class AbstractCalendarAccessor {
                 new String[]{
                         this.getKey(KeyIndex.CALENDARS_ID),
                         this.getKey(KeyIndex.CALENDARS_NAME),
-                        this.getKey(KeyIndex.CALENDARS_DISPLAY_NAME)
+                        this.getKey(KeyIndex.CALENDARS_DISPLAY_NAME),
+                        this.getKey(KeyIndex.IS_PRIMARY)
                 },
                 this.getKey(KeyIndex.CALENDARS_VISIBLE) + "=1", null, null
         );
@@ -279,12 +282,18 @@ public abstract class AbstractCalendarAccessor {
             return null;
         }
         JSONArray calendarsWrapper = new JSONArray();
+        int primaryColumnIndex;
         if (cursor.moveToFirst()) {
             do {
                 JSONObject calendar = new JSONObject();
                 calendar.put("id", cursor.getString(cursor.getColumnIndex(this.getKey(KeyIndex.CALENDARS_ID))));
                 calendar.put("name", cursor.getString(cursor.getColumnIndex(this.getKey(KeyIndex.CALENDARS_NAME))));
                 calendar.put("displayname", cursor.getString(cursor.getColumnIndex(this.getKey(KeyIndex.CALENDARS_DISPLAY_NAME))));
+                primaryColumnIndex = cursor.getColumnIndex(this.getKey((KeyIndex.IS_PRIMARY)));
+                if (primaryColumnIndex == -1) {
+                    primaryColumnIndex = cursor.getColumnIndex("COALESCE(isPrimary, ownerAccount = account_name)");
+                }
+                calendar.put("isPrimary", "1".equals(cursor.getString(primaryColumnIndex)));
                 calendarsWrapper.put(calendar);
             } while (cursor.moveToNext());
             cursor.close();
@@ -495,9 +504,9 @@ public abstract class AbstractCalendarAccessor {
         return result;
     }
 
-    public boolean deleteEvent(Uri eventsUri, long startFrom, long startTo, String title, String location) {
+    public boolean deleteEvent(Uri eventsUri, long startFrom, long startTo, String title, String location, String notes) {
         ContentResolver resolver = this.cordova.getActivity().getApplicationContext().getContentResolver();
-        Event[] events = fetchEventInstances(null, title, location, "", startFrom, startTo);
+        Event[] events = fetchEventInstances(null, title, location, notes, startFrom, startTo);
         int nrDeletedRecords = 0;
         if (events != null) {
             for (Event event : events) {
@@ -506,6 +515,81 @@ public abstract class AbstractCalendarAccessor {
             }
         }
         return nrDeletedRecords > 0;
+    }
+
+    public boolean deleteEventById(Uri eventsUri, long id, long fromTime) {
+        if (id == -1)
+            throw new IllegalArgumentException("Event id not specified.");
+
+        // Find event
+        long evDtStart = -1;
+        String evRRule = null;
+        {
+            Cursor cur = queryEvents(new String[] { Events.DTSTART, Events.RRULE },
+                                     Events._ID + " = ?",
+                                     new String[] { Long.toString(id) },
+                                     Events.DTSTART);
+            if (cur.moveToNext()) {
+                evDtStart = cur.getLong(0);
+                evRRule = cur.getString(1);
+            }
+            cur.close();
+        }
+        if (evDtStart == -1)
+            throw new RuntimeException("Could not find event.");
+
+        // If targeted, delete initial event
+        if (fromTime == -1 || evDtStart >= fromTime) {
+            ContentResolver resolver = this.cordova.getActivity().getContentResolver();
+            int deleted = this.cordova.getActivity().getContentResolver()
+                              .delete(ContentUris.withAppendedId(eventsUri, id), null, null);
+            return deleted > 0;
+        }
+
+        // Find target instance
+        long targDtStart = -1;
+        {
+            // Scans just over a year.
+            // Not using a wider range because it can corrupt the Calendar Storage state! https://issuetracker.google.com/issues/36980229
+            Cursor cur = queryEventInstances(fromTime,
+                                             fromTime + 1000L * 60L * 60L * 24L * 367L,
+                                             new String[] { Instances.DTSTART },
+                                             Instances.EVENT_ID + " = ?",
+                                             new String[] { Long.toString(id) },
+                                             Instances.DTSTART);
+            if (cur.moveToNext()) {
+                targDtStart = cur.getLong(0);
+            }
+            cur.close();
+        }
+        if (targDtStart == -1) {
+            // Nothing to delete
+            return false;
+        }
+
+        // Set UNTIL
+        if (evRRule == null)
+            evRRule = "";
+
+        // Remove any existing COUNT or UNTIL
+        List<String> recurRuleParts = new ArrayList<String>(Arrays.asList(evRRule.split(";")));
+        Iterator<String> iter = recurRuleParts.iterator();
+        while (iter.hasNext()) {
+            String rulePart = iter.next();
+            if (rulePart.startsWith("COUNT=") || rulePart.startsWith("UNTIL=")) {
+                iter.remove();
+            }
+        }
+
+        evRRule = TextUtils.join(";", recurRuleParts) + ";UNTIL=" + nl.xservices.plugins.Calendar.formatICalDateTime(new Date(fromTime - 1000));
+
+        // Update event
+        ContentValues values = new ContentValues();
+        values.put(Events.RRULE, evRRule);
+        int updated = this.cordova.getActivity().getContentResolver()
+                          .update(ContentUris.withAppendedId(eventsUri, id), values, null, null);
+
+        return updated > 0;
     }
 
     public String createEvent(Uri eventsUri, String title, long startTime, long endTime, String description,
@@ -543,14 +627,12 @@ public abstract class AbstractCalendarAccessor {
         values.put(Events.EVENT_LOCATION, location);
 
         if (recurrence != null) {
-            final SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMdd'T'hhmmss'Z'");
-
             String rrule = "FREQ=" + recurrence.toUpperCase() +
                     ((recurrenceInterval > -1) ? ";INTERVAL=" + recurrenceInterval : "") +
                     ((recurrenceWeekstart != null) ? ";WKST=" + recurrenceWeekstart : "") +
                     ((recurrenceByDay != null) ? ";BYDAY=" + recurrenceByDay : "") +
                     ((recurrenceByMonthDay != null) ? ";BYMONTHDAY=" + recurrenceByMonthDay : "") +
-                    ((recurrenceEndTime > -1) ? ";UNTIL=" + sdf.format(new Date(recurrenceEndTime)) : "") +
+                    ((recurrenceEndTime > -1) ? ";UNTIL=" + nl.xservices.plugins.Calendar.formatICalDateTime(new Date(recurrenceEndTime)) : "") +
                     ((recurrenceCount > -1) ? ";COUNT=" + recurrenceCount : "");
             values.put(Events.RRULE, rrule);
         }
@@ -591,7 +673,7 @@ public abstract class AbstractCalendarAccessor {
             Cursor result = contentResolver.query(evuri, new String[]{CalendarContract.Calendars._ID, CalendarContract.Calendars.NAME, CalendarContract.Calendars.CALENDAR_DISPLAY_NAME}, null, null, null);
             if (result != null) {
                 while (result.moveToNext()) {
-                    if (result.getString(1).equals(calendarName) || result.getString(2).equals(calendarName)) {
+                    if ((result.getString(1) != null && result.getString(1).equals(calendarName)) || (result.getString(2) != null && result.getString(2).equals(calendarName))) {
                         result.close();
                         return null;
                     }
@@ -640,7 +722,7 @@ public abstract class AbstractCalendarAccessor {
             Cursor result = contentResolver.query(evuri, new String[]{CalendarContract.Calendars._ID, CalendarContract.Calendars.NAME, CalendarContract.Calendars.CALENDAR_DISPLAY_NAME}, null, null, null);
             if (result != null) {
                 while (result.moveToNext()) {
-                    if (result.getString(1).equals(calendarName) || result.getString(2).equals(calendarName)) {
+                    if (result.getString(1) != null && result.getString(1).equals(calendarName) || result.getString(2) != null && result.getString(2).equals(calendarName)) {
                         long calid = result.getLong(0);
                         Uri deleteUri = ContentUris.withAppendedId(evuri, calid);
                         contentResolver.delete(deleteUri, null, null);
@@ -679,7 +761,7 @@ public abstract class AbstractCalendarAccessor {
             Cursor result = contentResolver.query(evuri, new String[]{CalendarContract.Calendars._ID, CalendarContract.Calendars.ACCOUNT_NAME}, null, null, null);
             if (result != null) {
                 while (result.moveToNext()) {
-                    if (result.getString(1).equals(fixingAccountName)) {
+                    if (result.getString(1) != null && result.getString(1).equals(fixingAccountName)) {
                         long calid = result.getLong(0);
                         Uri deleteUri = ContentUris.withAppendedId(evuri, calid);
                         contentResolver.delete(deleteUri, null, null);

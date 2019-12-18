@@ -18,8 +18,9 @@ public class LegacyCalendarAccessor extends AbstractCalendarAccessor {
   protected EnumMap<KeyIndex, String> initContentProviderKeys() {
     EnumMap<KeyIndex, String> keys = new EnumMap<KeyIndex, String>(KeyIndex.class);
     keys.put(KeyIndex.CALENDARS_ID, "_id");
+    keys.put(KeyIndex.IS_PRIMARY, "isPrimary");
     keys.put(KeyIndex.CALENDARS_NAME, "name");
-	keys.put(KeyIndex.CALENDARS_DISPLAY_NAME, "displayname");
+	  keys.put(KeyIndex.CALENDARS_DISPLAY_NAME, "displayname");
     keys.put(KeyIndex.CALENDARS_VISIBLE, "selected");
     keys.put(KeyIndex.EVENTS_ID, "_id");
     keys.put(KeyIndex.EVENTS_CALENDAR_ID, "calendar_id");
@@ -85,9 +86,15 @@ public class LegacyCalendarAccessor extends AbstractCalendarAccessor {
   }
 
   @Override
-  public boolean deleteEvent(Uri eventsUri, long startFrom, long startTo, String title, String location) {
+  public boolean deleteEvent(Uri eventsUri, long startFrom, long startTo, String title, String location, String notes) {
     eventsUri = eventsUri == null ? Uri.parse(CONTENT_PROVIDER_PRE_FROYO + CONTENT_PROVIDER_PATH_EVENTS) : eventsUri;
-    return super.deleteEvent(eventsUri, startFrom, startTo, title, location);
+    return super.deleteEvent(eventsUri, startFrom, startTo, title, location, notes);
+  }
+
+  @Override
+  public boolean deleteEventById(Uri eventsUri, long id, long fromDate) {
+    eventsUri = eventsUri == null ? Uri.parse(CONTENT_PROVIDER_PRE_FROYO + CONTENT_PROVIDER_PATH_EVENTS) : eventsUri;
+    return super.deleteEventById(eventsUri, id, fromDate);
   }
 
   @Override
